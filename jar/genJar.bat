@@ -5,6 +5,9 @@ echo "[I] gen jar"
 del "%~dp0\custom_spider.jar"
 rd /s/q "%~dp0\Smali_classes"
 
+echo "[I] list dir"
+dir "%~dp0\..\app\build\intermediates\dex\release\"
+
 echo "[I] Smali_classes"
 java -jar "%~dp0\3rd\baksmali-2.5.2.jar" d "%~dp0\..\app\build\intermediates\dex\release\minifyReleaseWithR8\classes.dex" -o "%~dp0\Smali_classes"
 
