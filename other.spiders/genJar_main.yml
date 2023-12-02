@@ -1,0 +1,84 @@
+name: Main Self build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check New Commit
+        run: |
+          upstreamCode=https://github.com/intHbl/homeVideoBoxJar
+          echo "upstreamCode=$upstreamCode" >> $GITHUB_ENV
+          commit=$(curl -sL $upstreamCode/commits/main |grep -o '/intHbl/homeVideoBox/commit/[a-z0-9]\+' |head -1 | cut -d\/ -f5)
+          if ! git log --oneline |grep -q "$commit"; then
+            echo "commit=$commit" >> $GITHUB_ENV
+            echo "commitS=${commit:0:7}" >> $GITHUB_ENV
+            echo "workdir=homeVideoBoxJar" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout Source Code and Zip
+        if: ${{ env.commit }}
+        run: |
+          git clone ${{ env.upstreamCode }} ${{ env.homeVideoBoxJar }}
+          cd ${{ env.homeVideoBoxJar }}
+          git checkout ${{ env.commit }}
+          echo "tag=$(git log --date=format:'%Y%m%d-%H%M' --pretty=format:%cd ${{ env.commitS }} -1)" >> $GITHUB_ENV
+          zip -q -x ".git/*" -r ${{ env.commitS }}-source.zip .
+
+
+      - name: Build Release With Gradle
+        if: ${{ env.commit }}
+        working-directory: ${{ env.homeVideoBoxJar }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          
+      # - name: Build Debug With Gradle
+      #   if: ${{ env.commit }}
+      #   working-directory: ${{ env.homeVideoBoxJar }}
+      #   run: |
+      #     chmod +x gradlew
+      #     ./gradlew assembledebug --build-cache --parallel --daemon --warning-mode all
+          
+      - name: Prepare App
+        if: ${{ env.commit }}
+        working-directory: ${{ env.homeVideoBoxJar }}
+        run: |
+          rm -rf apk/
+          mkdir -p apk/
+          for file in `find ~ -name "*release*.apk" -print`; do
+            mv "$file" apk/homeVideoBox_${{ env.tag }}_Release.apk
+          done
+          for file in `find ~ -name "*debug*.apk" -print`; do
+            mv "$file" apk/homeVideoBox_${{ env.tag }}_Debug.apk
+          done
+
+      # - name: Release Note
+      #   if: ${{ env.commit }}
+      #   working-directory: ${{ env.homeVideoBoxJar }}
+      #   run: |
+      #     echo -e "Credit: Commit: ${{ env.commit }}\nChangelog:" > apk/homeVideoBox-Release.log
+      #     if [ "${{ env.commit }}" == "${lastCommit}" ]; then
+      #       git log --pretty=format:%B ${{ env.commitS }} -1 |sed -e "s# \{2,\}#\n#g" -e "/^Merge \(pull\|branch\|remote\)/d" -e '/^$/d' |cat -n |sort -k2,2 -k1,1n |uniq -f1 |sort -k1,1n |cut -f2- >> apk/${{ matrix.userName }}-Release.log
+      #     else
+      #       git log --pretty=format:%B ${{ env.commitS }}...${lastCommit:0:7} |sed -e "s# \{2,\}#\n#g" -e "/^Merge \(pull\|branch\|remote\)/d" -e '/^$/d' |cat -n |sort -k2,2 -k1,1n |uniq -f1 |sort -k1,1n |cut -f2- >> apk/${{ matrix.userName }}-Release.log
+      #     fi
+      
+      - name: Upload App To Artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ env.commit }}
+        with:
+          name: homeVideoBox_Release_and_Debug
+          path: ${{ env.homeVideoBoxJar }}/apk/*
+
