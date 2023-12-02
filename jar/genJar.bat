@@ -2,7 +2,7 @@
 
 echo "[I] gen jar"
 
-del "%~dp0\custom_spider.jar"
+del "%~dp0\spider_homeVideoBoxJar.jar"
 rd /s/q "%~dp0\Smali_classes"
 
 echo "[I] list dir"
@@ -31,12 +31,12 @@ rd /s/q "%~dp0\Smali_classes"
 echo "[I] spider.jar"
 java -jar "%~dp0\3rd\apktool_2.4.1.jar" b "%~dp0\spider.jar" -c
 
-echo "[I]  move to custom_spider.jar"
-move "%~dp0\spider.jar\dist\dex.jar" "%~dp0\out\custom_spider.jar"
+echo "[I]  move to spider_homeVideoBoxJar.jar"
+move "%~dp0\spider.jar\dist\dex.jar" "%~dp0\out\spider_homeVideoBoxJar.jar"
 
-if exist "%~dp0\out\custom_spider.jar" (
+if exist "%~dp0\out\spider_homeVideoBoxJar.jar" (
     echo "[I] md5"
-    certUtil -hashfile "%~dp0\out\custom_spider.jar" MD5 | find /i /v "md5" | find /i /v "certutil" > "%~dp0\out\custom_spider.jar.md5"
+    certUtil -hashfile "%~dp0\out\spider_homeVideoBoxJar.jar" MD5 | find /i /v "md5" | find /i /v "certutil" > "%~dp0\out\spider_homeVideoBoxJar.jar.md5"
     echo "[DONE]"
     echo "[DONE]"
     echo "[DONE]"
